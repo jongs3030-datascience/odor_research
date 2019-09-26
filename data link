@@ -1,0 +1,16 @@
+경기 데이터 드림 -> https://data.gg.go.kr/portal/mainPage.do
+
+대기질 측정소 현황( csv 파일 다운 )
+https://data.gg.go.kr/portal/data/service/selectServicePage.do?page=1&sortColumn=&sortDirection=&infId=HJ1B4G5Q9T0CG2Z9FAHP26432869&infSeq=1&searchWord=%EB%8C%80%EA%B8%B0
+
+대기질 측정 정보( sheet 말고 file 탭에 들어가서 대기질 측정 정보 2016, 2017, 2018, 2019 자료 다운로드 )
+https://data.gg.go.kr/portal/data/service/selectServicePage.do?page=1&sortColumn=&sortDirection=&infId=GE0DUHTX3VX0GL4R0LUS26448884&infSeq=1&searchWord=%EB%8C%80%EA%B8%B0
+
+자동 기상관측 장비 설치 현황 ( csv 파일 다운 )
+https://data.gg.go.kr/portal/data/service/selectServicePage.do?page=1&sortColumn=&sortDirection=&infId=IW2T5YWJTM7NUZ2QPVU025865983&infSeq=1&searchWord=%EA%B8%B0%EC%83%81
+
+자동 기상관측 장비 시간별 관측 정보 현황 ( sheet 말고 file 탭에 들어가서, AWS 시간별 관측 정보 2003~2017, 2018, 2019 자료 다운로드 )
+https://data.gg.go.kr/portal/data/service/selectServicePage.do?page=1&sortColumn=&sortDirection=&infId=458YRRY04VI3BBMI6Q8326869752&infSeq=1&searchWord=%EA%B8%B0%EC%83%81
+
+공장 등록 현황 ( csv 파일 다운 )
+https://data.gg.go.kr/portal/data/service/selectServicePage.do?page=1&sortColumn=&sortDirection=&infId=794V0223GQQ9O1P4WAP221637079&infSeq=1&searchWord=%EA%B3%B5%EC%9E%A5
