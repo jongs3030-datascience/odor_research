@@ -1,0 +1,160 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas_profiling as pp
+import glob
+
+odor_observer = pd.read_csv("대기질측정소현황.csv", encoding = 'cp949')
+odor_observer['측정소명'].replace('부곡동1', '부곡동', inplace = True)
+
+odor_2016 = pd.read_csv("대기질측정정보(2016년).txt", encoding = 'cp949')
+odor_2017 = pd.read_csv("대기질측정정보(2017년).txt", encoding = 'cp949')
+odor_2018 = pd.read_csv("대기질측정정보(2018년).csv", encoding = 'cp949')
+
+def reduce_mem_usage(df, verbose=True):
+    numerics = ['int16', 'int32', 'int64', 'float16', 'float32', 'float64']
+    start_mem = df.memory_usage().sum() / 1024**2    
+    for col in df.columns:
+        col_type = df[col].dtypes
+        if col_type in numerics:
+            c_min = df[col].min()
+            c_max = df[col].max()
+            if str(col_type)[:3] == 'int':
+                if c_min > np.iinfo(np.int8).min and c_max < np.iinfo(np.int8).max:
+                    df[col] = df[col].astype(np.int8)
+                elif c_min > np.iinfo(np.int16).min and c_max < np.iinfo(np.int16).max:
+                    df[col] = df[col].astype(np.int16)
+                elif c_min > np.iinfo(np.int32).min and c_max < np.iinfo(np.int32).max:
+                    df[col] = df[col].astype(np.int32)
+                elif c_min > np.iinfo(np.int64).min and c_max < np.iinfo(np.int64).max:
+                    df[col] = df[col].astype(np.int64)  
+            else:
+                if c_min > np.finfo(np.float16).min and c_max < np.finfo(np.float16).max:
+                    df[col] = df[col].astype(np.float16)
+                elif c_min > np.finfo(np.float32).min and c_max < np.finfo(np.float32).max:
+                    df[col] = df[col].astype(np.float32)
+                else:
+                    df[col] = df[col].astype(np.float64)    
+    end_mem = df.memory_usage().sum() / 1024**2
+    if verbose: print('Mem. usage decreased to {:5.2f} Mb ({:.1f}% reduction)'.format(end_mem, 100 * (start_mem - end_mem) / start_mem))
+    return df
+
+odor_2018.rename(columns = {'측정망명' : '측정망 정보'}, inplace = True)
+odor_2018.rename(columns = {'측정일시각' : '측정일 시각'}, inplace = True)
+odor_2018.rename(columns = {'아황산가스농도값' : '아황산가스농도값(ppm)'}, inplace = True)
+odor_2018.rename(columns = {'일산화탄소농도값' : '일산화탄소농도값(ppm)'}, inplace = True)
+odor_2018.rename(columns = {'오존농도값' : '오존농도값(ppm)'}, inplace = True)
+odor_2018.rename(columns = {'이산화질소농도값' : '이산화질소농도값(ppm)'}, inplace = True)
+odor_2018.rename(columns = {'미세먼지PM10농도값' : '미세먼지PM10농도값(μg/m³)'}, inplace = True)
+odor_2018.rename(columns = {'미세먼지PM2.5농도값' : '미세먼지PM2.5농도값(μg/m³)'}, inplace = True)
+odor_2018.rename(columns = {'시군 코드' : '시군코드'}, inplace = True)
+
+odor_2016.drop(['설치년도', '측정망 정보', '일산화탄소농도값(ppm)', '미세먼지PM10농도값(μg/m³)', '미세먼지PM2.5농도값(μg/m³)'], axis='columns', inplace=True)
+odor_2017.drop(['설치년도', '측정망 정보', '일산화탄소농도값(ppm)', '미세먼지PM10농도값(μg/m³)', '미세먼지PM2.5농도값(μg/m³)'], axis='columns', inplace=True)
+odor_2018.drop(['설치년도', '측정망 정보', '일산화탄소농도값(ppm)', '미세먼지PM10농도값(μg/m³)', '미세먼지PM2.5농도값(μg/m³)'], axis='columns', inplace=True)
+
+
+observer_drop = odor_observer.drop(['시군명', '소재지지번주소', '소재지도로명주소', '소재지우편번호', '설치년도', '관리기관명', '측정소이미지URL', '측정소지도이미지URL', '측정망명'], axis = 1)
+
+observer_drop['측정소명'].replace('부곡동1', '부곡동', inplace = True)
+odor_2018['측정소명'].replace('부곡동1', '부곡동', inplace = True)
+
+observer_drop.to_csv('C:/Users/USER/odor_analysis/생성데이터/관측소최종.csv', index = False)
+
+odor_observer_merge_2016 = pd.merge(odor_2016, observer_drop, how = 'left', on = '측정소명')
+odor_observer_merge_2017 = pd.merge(odor_2017, observer_drop, how = 'left', on = '측정소명')
+odor_observer_merge_2018 = pd.merge(odor_2018, observer_drop, how = 'left', on = '측정소명')
+
+### 시군구코드정보 -> sg_code
+odor_sgcode = odor_2018.drop_duplicates(['시군코드'])
+odor_sgcode = odor_sgcode[['시군코드', '시군명']]
+odor_sgcode.to_csv('C:/Users/USER/odor_analysis/생성데이터/시군구코드정보.csv')
+
+sg_code = pd.read_csv("C:/Users/USER/odor_analysis/생성데이터/시군구코드정보.csv", encoding = 'utf-8')
+
+odor_2016 = pd.merge(odor_2016, sg_code, on = '시군명', how = 'left')
+odor_2017 = pd.merge(odor_2017, sg_code, on = '시군명', how = 'left')
+
+odor_observer_merge_2016.fillna(0)
+odor_observer_merge_2017.fillna(0)
+odor_observer_merge_2018.fillna(0)
+
+print(odor_observer_merge_2016['측정항목내역'].isnull().sum())
+print(odor_observer_merge_2017['측정항목내역'].isnull().sum())
+print(odor_observer_merge_2018['측정항목내역'].isnull().sum())
+
+odor_observer_merge_2016.to_csv('C:/Users/USER/odor_analysis/생성데이터/odor_observer_merge_2016.csv', index = False)
+odor_observer_merge_2017.to_csv('C:/Users/USER/odor_analysis/생성데이터/odor_observer_merge_2017.csv', index = False)
+odor_observer_merge_2018.to_csv('C:/Users/USER/odor_analysis/생성데이터/odor_observer_merge_2018.csv', index = False)
+
+############################################################################
+# 2019년 1~7월 대기질관측소 데이터 전처리
+
+path =r'C:\Users\USER\odor_analysis\대기질측정정보(2019년+1월_7월)' # use your path
+allFiles = glob.glob(path + "/*.txt")
+frame = pd.DataFrame()
+list_ = []
+for file_ in allFiles:
+    df = pd.read_csv(file_,index_col=None, encoding = 'cp949', header=0)
+    list_.append(df)
+frame = pd.concat(list_)
+odor_2019 = frame
+
+odor_2019.rename(columns = {'측정망명' : '측정망 정보'}, inplace = True)
+odor_2019.rename(columns = {'측정일시각' : '측정일 시각'}, inplace = True)
+odor_2019.rename(columns = {'아황산가스농도값' : '아황산가스농도값(ppm)'}, inplace = True)
+odor_2019.rename(columns = {'일산화탄소농도값' : '일산화탄소농도값(ppm)'}, inplace = True)
+odor_2019.rename(columns = {'오존농도값' : '오존농도값(ppm)'}, inplace = True)
+odor_2019.rename(columns = {'이산화질소농도값' : '이산화질소농도값(ppm)'}, inplace = True)
+odor_2019.rename(columns = {'미세먼지PM10농도값' : '미세먼지PM10농도값(μg/m³)'}, inplace = True)
+odor_2019.rename(columns = {'미세먼지PM2.5농도값' : '미세먼지PM2.5농도값(μg/m³)'}, inplace = True)
+odor_2019.rename(columns = {'시군 코드' : '시군코드'}, inplace = True)
+
+odor_2019.drop(['설치년도', '측정망 정보', '일산화탄소농도값(ppm)', '미세먼지PM10농도값(μg/m³)', '미세먼지PM2.5농도값(μg/m³)'], axis='columns', inplace=True)
+odor_2019['측정소명'].replace('부곡동1', '부곡동', inplace = True)
+
+odor_observer_merge_2019 = pd.merge(odor_2019, observer_drop, how = 'left', on = '측정소명')
+
+odor_observer_merge_2019.to_csv('C:/Users/USER/odor_analysis/2016_2018생성데이터/odor_observer_merge_2019.csv', index = False)
+
+
+#############################################################################
+### 기상데이터 합치기
+
+path =r'C:\Users\USER\odor_analysis\기상정보(2019_1월_7월)' # use your path
+allFiles = glob.glob(path + "/*.csv")
+frame = pd.DataFrame()
+list_ = []
+for file_ in allFiles:
+    df = pd.read_csv(file_,index_col=None, encoding = 'cp949', header=0)
+    list_.append(df)
+frame = pd.concat(list_)
+weather_2019 = frame
+
+import datetime
+
+weather_2019['관측시간_str'] = weather_2019['지점명']
+
+# 시간 중 0~9시는 00 ~ 09시로 만들기
+for i in range(len(weather_2019)):
+    weather_2019['관측시간_str'].iloc[i] = str(weather_2019['관측시간'].iloc[i])
+    if weather_2019['관측시간'].iloc[i] < 10 :
+        convert_time = "".join(["0", weather_2019['관측시간_str'].iloc[i]])
+        weather_2019['관측시간_str'].iloc[i] = convert_time
+
+# 시간을 00~23시에서 00:00 ~ 23:00시로 만들기
+for i in range(len(weather_2019)):
+    convert_time = ":".join([weather_2019['관측시간_str'].iloc[i], "00"])
+    weather_2019['시간변환'].iloc[i] = convert_time
+
+# 날짜를 20190101에서 2019-01-01로 바꾸기
+for i in range(len(weather_2019)):
+    convert_date = datetime.datetime.strptime(str(weather_2019['관측일자'].iloc[i]), "%Y%m%d").date()
+    weather_2019['날짜변환'].iloc[i] = convert_date
+    
+# 날짜와 시간을 합치기. 2019-01-01 01:00 형태로 합친날짜 변수에 할당하기
+for i in range(len(weather_2019)):
+    convert_time = " ".join([str(weather_2019['날짜변환'].iloc[i]), weather_2019['시간변환'].iloc[i]])
+    weather_2019['합친날짜'].iloc[i] = convert_time
+    
